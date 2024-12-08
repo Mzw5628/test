@@ -38,9 +38,6 @@ def get_attn_pad_mask(seq_q, seq_k):
     return pad_attn_mask.expand(batch_size, len_q, len_k)
 
 def get_attn_subsequence_mask(seq):
-    '''
-    seq: [batch_size, tgt_len]
-    '''
     attn_shape = [seq.size(0), seq.size(1), seq.size(1)]
     subsequence_mask = np.triu(np.ones(attn_shape), k=1)
     subsequence_mask = torch.from_numpy(subsequence_mask).byte()
@@ -73,8 +70,8 @@ class MultiHeadAttention(nn.Module):
         attn_mask = attn_mask.unsqueeze(1).repeat(1, n_heads, 1, 1)
 
         context, attn = ScaledDotProductAttention()(Q, K, V, attn_mask)
-        context = context.transpose(1, 2).reshape(batch_size, -1, n_heads * d_v) # context: [batch_size, len_q, n_heads * d_v]
-        output = self.fc(context) # [batch_size, len_q, d_model]
+        context = context.transpose(1, 2).reshape(batch_size, -1, n_heads * d_v) 
+        output = self.fc(context)
         return nn.LayerNorm(d_model).cuda()(output + residual), attn
 
 class PoswiseFeedForwardNet(nn.Module):
@@ -111,9 +108,8 @@ class DecoderLayer(nn.Module):
     def forward(self, dec_inputs, enc_outputs, dec_self_attn_mask, dec_enc_attn_mask):
 
         dec_outputs, dec_self_attn = self.dec_self_attn(dec_inputs, dec_inputs, dec_inputs, dec_self_attn_mask)
-        # dec_outputs: [batch_size, tgt_len, d_model], dec_enc_attn: [batch_size, h_heads, tgt_len, src_len]
         dec_outputs, dec_enc_attn = self.dec_enc_attn(dec_outputs, enc_outputs, enc_outputs, dec_enc_attn_mask)
-        dec_outputs = self.pos_ffn(dec_outputs) # [batch_size, tgt_len, d_model]
+        dec_outputs = self.pos_ffn(dec_outputs)
         return dec_outputs, dec_self_attn, dec_enc_attn
 
 class Encoder(nn.Module):
@@ -164,7 +160,6 @@ class Transformer(nn.Module):
         self.decoder = Decoder().cuda()
         self.projection = nn.Linear(d_model, tgt_vocab_size, bias=False).cuda()
     def forward(self, enc_inputs, dec_inputs):
-        
         enc_outputs, enc_self_attns = self.encoder(enc_inputs)
         dec_outputs, dec_self_attns, dec_enc_attns = self.decoder(dec_inputs, enc_inputs, enc_outputs)
         dec_logits = self.projection(dec_outputs)

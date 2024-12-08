@@ -67,9 +67,8 @@ if os.path.exists('transformer.pth'):
 criterion = nn.CrossEntropyLoss(ignore_index=0)
 optimizer = optim.SGD(model.parameters(), lr=1e-3, momentum=0.99)
 
-min_loss = float('inf')
-
 #训练部分
+min_loss = float('inf')
 for epoch in range(10):
     for enc_inputs, dec_inputs, dec_outputs in loader:
 
